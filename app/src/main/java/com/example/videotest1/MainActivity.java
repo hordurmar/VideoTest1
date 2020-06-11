@@ -2,16 +2,21 @@ package com.example.videotest1;
 
 import android.Manifest;
 import android.app.Activity;
+import android.media.ImageReader;
 import android.os.Bundle;
 import android.view.TextureView;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 
 import java.net.Inet4Address;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class MainActivity extends Activity {
+    VideoStreamer videoStreamer;
     Video video;
+    VideoServer videoServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,26 +33,38 @@ public class MainActivity extends Activity {
             e.printStackTrace();
         }
 
-        TextView helloText = (TextView) findViewById(R.id.helloText);
+        TextView helloText = findViewById(R.id.helloText);
         helloText.setText(ia);
-        TextureView previewTextureView = (TextureView) findViewById(R.id.previewTextureView);
-        video = new Video(this, previewTextureView);
+
+        TextureView previewTextureView = findViewById(R.id.previewTextureView);
+
+        this.videoServer = new VideoServer(this,8080);
+        this.videoStreamer = new VideoStreamer(this, this.videoServer);
+        this.video = new Video(this, previewTextureView);
+
+        //this.videoServer.start();
+        //ImageReader imageReader = this.videoStreamer.start();
+        //this.video.start(imageReader);
     }
 
     @Override
     protected void onPause() {
-        this.video.pause();
+        this.video.stop();
+        this.videoStreamer.stop();
+        this.videoServer.stop();
         super.onPause();
     }
 
     @Override
     protected void onResume() {
-        this.video.resume();
+        this.videoServer.start();
+        ImageReader imageReader = this.videoStreamer.start();
+        this.video.start(imageReader);
         super.onResume();
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == 17) {
             if (permissions[0].equals(Manifest.permission.CAMERA)) {
                 this.video.cameraPermissionCallback();
